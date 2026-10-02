@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>BAC BO NEXUS — Cloud Stream</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#070709;--card:#101012;--card2:#151518;--line:rgba(255,255,255,.08);--gold:#FFD60A;--blue:#3B82F6;--red:#EF4444;--green:#22C55E}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#fff;font-family:Space Grotesk,sans-serif;-webkit-font-smoothing:antialiased}
+.top{position:sticky;top:0;z-index:10;background:rgba(7,7,9,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+.brand{font-family:Syne,sans-serif;font-weight:800;letter-spacing:-.5px;font-size:18px}
+.brand b{color:var(--gold)}
+.pill{font-size:10px;font-weight:800;letter-spacing:1px;padding:6px 10px;border-radius:99px;border:1px solid var(--line);background:var(--card2)}
+.live{width:8px;height:8px;background:var(--green);border-radius:50%;display:inline-block;box-shadow:0 0 8px var(--green);animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.wrap{max-width:980px;margin:0 auto;padding:14px;display:flex;flex-direction:column;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px}
+.card.gold{border-color:rgba(255,214,10,.18);background:linear-gradient(180deg, #15150c, var(--card))}
+.h{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#777;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.h i{width:3px;height:14px;border-radius:99px;background:var(--gold);display:inline-block}
+.dice-row{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;padding:8px 0}
+.d{width:62px;height:62px;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.d.blue{background:linear-gradient(135deg, #60A5FA, #1E40AF)}
+.d.red{background:linear-gradient(135deg, #F87171, #7F1D1D)}
+.d .n{font-family:Syne,sans-serif;font-size:26px;line-height:1}
+.d .l{font-size:8px;letter-spacing:1px;opacity:.8;margin-top:2px}
+.vs{font-family:Syne,sans-serif;font-weight:800;padding:8px 14px;border-radius:99px;background:rgba(255,214,10,.12);border:1px solid rgba(255,214,10,.22);color:var(--gold);font-size:14px}
+.sig{padding:18px;border-radius:20px;text-align:center;position:relative;overflow:hidden}
+.sig.player{background:linear-gradient(135deg, rgba(59,130,246,.14), var(--card));border:2px solid rgba(59,130,246,.35)}
+.sig.banker{background:linear-gradient(135deg, rgba(239,68,68,.14), var(--card));border:2px solid rgba(239,68,68,.35)}
+.sig.wait{background:var(--card2);border:1px dashed var(--line)}
+.sig-entry{font-family:Syne,sans-serif;font-size:36px;font-weight:800;letter-spacing:-1px;margin:6px 0}
+.btn{width:100%;padding:14px;border-radius:14px;border:none;font-weight:800;font-size:14px;cursor:pointer}
+.btn.player{background:var(--blue);color:#fff}
+.btn.banker{background:var(--red);color:#fff}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:600px){.grid2{grid-template-columns:1fr}}
+.stat{padding:12px;border-radius:14px;background:var(--card2);border:1px solid var(--line);text-align:center}
+.stat .k{font-size:9px;color:#666;letter-spacing:1px}
+.stat .v{font-family:Syne,sans-serif;font-weight:800;font-size:20px;margin-top:4px}
+.matrix{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media(min-width:700px){.matrix{grid-template-columns:repeat(6,1fr)}}
+.cell{padding:10px;border-radius:14px;background:var(--card2);border:1px solid var(--line);text-align:center;cursor:pointer;transition:.2s}
+.cell:hover{border-color:rgba(255,214,10,.3);transform:translateY(-1px)}
+.cell.active{border-color:var(--gold);background:rgba(255,214,10,.10)}
+.cell .n{font-family:Syne,sans-serif;font-weight:800;font-size:18px}
+.cell .p{font-size:10px;font-weight:700;margin-top:4px;padding:4px 6px;border-radius:99px;display:inline-block}
+.cell .p.player{background:rgba(59,130,246,.15);color:var(--blue)}
+.cell .p.banker{background:rgba(239,68,68,.15);color:var(--red)}
+.beads{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;max-height:260px;overflow-y:auto;padding:8px;background:#0a0a0c;border-radius:14px;border:1px solid var(--line)}
+@media(min-width:700px){.beads{grid-template-columns:repeat(12,1fr)}}
+.bead{aspect-ratio:1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:JetBrains Mono,sans-serif;font-size:10px;font-weight:700;color:#fff;line-height:1}
+.bead.player{background:var(--blue)}
+.bead.banker{background:var(--red)}
+.bead.tie{background:var(--gold);color:#000}
+.bead small{font-size:8px;opacity:.9}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
+.tab{padding:10px 14px;border-radius:99px;font-size:11px;font-weight:800;letter-spacing:1px;border:1px solid var(--line);background:var(--card2);color:#777;cursor:pointer;white-space:nowrap;transition:.2s}
+.tab.active{background:var(--gold);color:#000;border-color:var(--gold)}
+table{width:100%;font-size:11px;border-collapse:collapse}
+th{color:#555;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:8px;text-align:left}
+td{padding:8px;border-top:1px solid var(--line)}
+canvas{max-height:200px}
+#login{position:fixed;inset:0;z-index:99;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--bg)}
+.login-box{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:28px;text-align:center}
+.inp{width:100%;padding:14px;margin:6px 0;border-radius:12px;background:#0a0a0c;border:1px solid var(--line);color:#fff;outline:none}
+.btn-gold{width:100%;padding:14px;margin-top:12px;border-radius:12px;background:var(--gold);color:#000;font-weight:800;border:none;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="login"><div class="login-box"><div style="width:48px;height:48px;background:var(--gold);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-family:Syne,sans-serif;font-weight:800;color:#000;font-size:22px">B</div><div style="font-family:Syne,sans-serif;font-weight:800;font-size:22px">BAC BO NEXUS</div><div style="font-size:10px;letter-spacing:2px;color:#666;margin:6px 0 18px">CLOUD STREAM • NOVA IMGUI</div><input id="lu" class="inp" placeholder="email"><input id="lp" type="password" class="inp" placeholder="senha"><button class="btn-gold" onclick="doLogin()">ENTRAR</button><div id="le" style="display:none;margin-top:10px;color:#ff8a8a;font-size:12px"></div></div></div>
+
+<div class="top">
+  <div class="brand">BAC BO <b>NEXUS</b></div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span class="pill" id="apiStatus"><span class="live"></span> CLOUD • conectando</span>
+    <button onclick="resetAll()" style="padding:8px 12px;border-radius:99px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.15);color:#ff8a8a;font-size:11px;font-weight:700;cursor:pointer">zerar</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="card gold">
+    <div class="h"><i></i> Live Dice • Cloud Stream</div>
+    <div class="dice-row" id="diceRow">
+      <div class="d blue"><span class="n" id="dP1">-</span><span class="l">P1 AZUL</span></div>
+      <div class="d blue"><span class="n" id="dP2">-</span><span class="l">P2 AZUL</span></div>
+      <div class="vs" id="vs">- - -</div>
+      <div class="d red"><span class="n" id="dB1">-</span><span class="l">B1 VERM</span></div>
+      <div class="d red"><span class="n" id="dB2">-</span><span class="l">B2 VERM</span></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:12px">
+      <div><div style="font-size:10px;color:#666">VENCEDOR</div><div id="winner" style="font-family:Syne,sans-serif;font-weight:800;font-size:22px">—</div><div id="winDetail" style="font-size:11px;color:#666">—</div></div>
+      <div style="text-align:right"><div style="font-size:10px;color:#666">RODADAS</div><div id="total" style="font-family:Syne,sans-serif;font-weight:800;font-size:22px">0</div><div id="totalSub" style="font-size:11px;color:#666">—</div></div>
+    </div>
+    <div class="grid2" style="margin-top:12px">
+      <div class="stat"><div class="k">PLAYER AZUL</div><div class="v" id="pC" style="color:var(--blue)">0</div><div style="font-size:11px;color:#666" id="pP">0%</div></div>
+      <div class="stat"><div class="k">BANKER VERMELHO</div><div class="v" id="bC" style="color:var(--red)">0</div><div style="font-size:11px;color:#666" id="bP">0%</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="h"><i style="background:var(--green)"></i> Sinal IA • 60%+ • Nuvem</div>
+    <div id="aiBox"><div style="padding:18px;text-align:center;background:var(--card2);border:1px dashed var(--line);border-radius:16px">Carregando IA...</div></div>
+    <div style="margin-top:10px;font-size:10px;color:#666">HISTÓRICO <span id="sigStats" style="float:right"></span></div>
+    <div id="sigList" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card gold">
+    <div class="h"><i></i> O que cada número puxa? • 8 vermelho puxa o quê?</div>
+    <div style="font-size:11px;color:#666;margin-bottom:10px">Toque no número. Ex: 8 → PLAYER 70% = quando veio 8, próxima foi Player em 70%.</div>
+    <div class="matrix" id="matrix"></div>
+    <div id="matrixDetail" style="display:none;margin-top:12px;padding:12px;background:var(--card2);border:1px solid var(--line);border-radius:12px"></div>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('placar')">Placar</div>
+      <div class="tab" onclick="switchTab('info')">Infos</div>
+      <div class="tab" onclick="switchTab('charts')">Gráficos</div>
+      <div class="tab" onclick="switchTab('ledger')">Ledger</div>
+    </div>
+    <div id="tab-placar" style="margin-top:12px">
+      <div class="beads" id="beadGrid"><div style="color:#666;font-size:11px;padding:10px">Aguardando...</div></div>
+      <div style="display:flex;gap:8px;margin-top:10px"><input id="pasteBox" placeholder="Cole 8-6, 7-7, 10-4..." style="flex:1;padding:10px;border-radius:10px;background:#0a0a0c;border:1px solid var(--line);color:#fff;font-size:12px"><button onclick="parsePaste()" style="padding:10px 14px;border-radius:10px;background:var(--gold);color:#000;font-weight:800;font-size:12px;border:none;cursor:pointer">+ Add</button></div>
+    </div>
+    <div id="tab-info" style="display:none;margin-top:12px">
+      <div class="grid2">
+        <div class="stat"><div class="k">TOTAL</div><div class="v" id="total2">0</div><div style="font-size:11px;color:#666" id="totalSub2">—</div></div>
+        <div class="stat"><div class="k">TIE</div><div class="v" id="tC" style="color:var(--gold)">0</div><div style="font-size:11px;color:#666" id="tP">0%</div></div>
+      </div>
+      <div style="margin-top:12px"><div style="font-size:10px;color:#666;font-weight:700;margin-bottom:6px">NÚMEROS QUENTES</div><div id="hotBox"></div></div>
+      <div style="margin-top:12px"><div style="font-size:10px;color:#666;font-weight:700;margin-bottom:6px">MINUTOS QUE PUXAM</div><div id="minBox"></div></div>
+      <div style="margin-top:12px"><div style="font-size:10px;color:#666;font-weight:700;margin-bottom:6px">PADRÕES</div><div id="patBox"></div></div>
+    </div>
+    <div id="tab-charts" style="display:none;margin-top:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><canvas id="cDist"></canvas></div><div><canvas id="cHist"></canvas></div></div>
+    </div>
+    <div id="tab-ledger" style="display:none;margin-top:12px">
+      <div style="max-height:300px;overflow-y:auto"><table><thead><tr><th>#</th><th>Resultado</th><th>P1 P2 B1 B2</th><th>Vencedor</th><th>Hora</th></tr></thead><tbody id="tbody"></tbody></table></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASES=['https://bacbo-real-api.onrender.com','https://bacbo-real-api-1.onrender.com','http://localhost:3000'];
+let API_BASE=localStorage.getItem('bacbo_api_base')||API_BASES[0];
+const BLUE='#3B82F6',RED='#EF4444',GOLD='#FFD60A',GREEN='#22C55E';
+let chartDist=null,chartHist=null,eventSource=null;
+let bacboData=[],iaStats={greens:0,reds:0,g0:0,g1:0,g2:0,tieGreens:0},sigHistory=[],activeSignal=null,lastSignalAt=0,lastKey='';
+const LS_DATA='bacbo_nexus_data',LS_STATS='bacbo_nexus_stats',LS_SIGS='bacbo_nexus_sigs',LS_ACT='bacbo_nexus_act';
+try{
+ const d=JSON.parse(localStorage.getItem(LS_DATA)||'null');if(Array.isArray(d))bacboData=d;
+ const s=JSON.parse(localStorage.getItem(LS_STATS)||'null');if(s)iaStats=s;
+ const h=JSON.parse(localStorage.getItem(LS_SIGS)||'null');if(Array.isArray(h))sigHistory=h;
+ const a=JSON.parse(localStorage.getItem(LS_ACT)||'null');if(a&&a.id)activeSignal=a;
+}catch(e){}
+function persist(){try{localStorage.setItem(LS_DATA,JSON.stringify(bacboData.slice(0,400)));localStorage.setItem(LS_STATS,JSON.stringify(iaStats));localStorage.setItem(LS_SIGS,JSON.stringify(sigHistory.slice(0,12)));if(activeSignal)localStorage.setItem(LS_ACT,JSON.stringify(activeSignal));else localStorage.removeItem(LS_ACT);}catch(e){}}
+function pct(a,b){return b?((a/b)*100).toFixed(1):0;}
+function genId(){return 'bb_'+Date.now()+'_'+Math.random().toString(36).substr(2,4);}
+function parseBacBo(txt){
+ txt=String(txt).trim();if(!txt)return null;
+ let m=txt.match(/(\d{1,2})\s*[-xX]\s*(\d{1,2})/);if(!m)m=txt.match(/(\d{1,2})\s+(\d{1,2})/);if(!m)return null;
+ let p=parseInt(m[1]),b=parseInt(m[2]);if(p<2||p>12||b<2||b>12)return null;
+ let winner=p>b?'PLAYER':b>p?'BANKER':'TIE';
+ const dP1=Math.max(1,Math.floor(p/2)),dP2=p-dP1,dB1=Math.max(1,Math.floor(b/2)),dB2=b-dB1;
+ return {player:p,banker:b,winner:winner,time:new Date().toLocaleTimeString('pt-BR'),ts:Date.now(),round_id:genId(),diceP1:dP1,diceP2:dP2,diceB1:dB1,diceB2:dB2};
+}
+function parsePaste(){const txt=document.getElementById('pasteBox').value.trim();if(!txt)return;let added=0;for(const line of txt.split('\n')){const r=parseBacBo(line);if(r){bacboData.unshift(r);added++;}}bacboData=bacboData.slice(0,400);persist();renderAll(bacboData);document.getElementById('pasteBox').value='';}
+function resetAll(){if(!confirm('Zerar?'))return;bacboData=[];iaStats={greens:0,reds:0,g0:0,g1:0,g2:0,tieGreens:0};sigHistory=[];activeSignal=null;localStorage.removeItem(LS_DATA);localStorage.removeItem(LS_STATS);localStorage.removeItem(LS_SIGS);localStorage.removeItem(LS_ACT);renderAll([]);}
+function switchTab(name){
+ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+ document.querySelector(`.tab[onclick="switchTab('${name}')"]`).classList.add('active');
+ document.getElementById('tab-placar').style.display=name==='placar'?'block':'none';
+ document.getElementById('tab-info').style.display=name==='info'?'block':'none';
+ document.getElementById('tab-charts').style.display=name==='charts'?'block':'none';
+ document.getElementById('tab-ledger').style.display=name==='ledger'?'block':'none';
+}
+function analyzePulls(data){
+ const pulls={};for(let n=2;n<=12;n++)pulls[n]={PLAYER:0,BANKER:0,TIE:0,n:0};
+ for(let i=1;i<data.length;i++){const prev=data[i],curr=data[i-1];if(pulls[prev.player]){pulls[prev.player].n++;pulls[prev.player][curr.winner]++;} if(prev.banker!==prev.player && pulls[prev.banker]){pulls[prev.banker].n++;pulls[prev.banker][curr.winner]++;}}
+ return pulls;
+}
+function pickPattern(data){
+ const seq=data.map(x=>x.winner);const cands=[];
+ for(const L of [2,3,4]){
+  if(seq.length<L+4)continue;
+  const pat=seq.slice(0,L).join(',');const hits=[];
+  for(let i=L;i<Math.min(seq.length,120);i++)if(seq.slice(i,i+L).join(',')===pat)hits.push(i);
+  if(hits.length>=6){
+   let pc=0,bc=0;for(const idx of hits){const w=seq[idx-1];if(w==='PLAYER')pc++;else if(w==='BANKER')bc++;}
+   const pred=pc>=bc?'PLAYER':'BANKER';let n=0,w0=0,w1=0;
+   for(const idx of hits){if(idx<3)continue;n++;let g=-1;for(let gg=0;gg<=2;gg++){const ix=idx-1-gg;if(ix<0)break;const w=seq[ix];if(w===pred||w==='TIE'){g=gg;break;}} if(g===0)w0++;if(g>=0&&g<=1)w1++;}
+   if(n>=8){const h0=w0/n,h1=w1/n;cands.push({label:L+'x',n:n,pred:pred,hit:h1,h0:h0,gale:(h0*3+h1)/4});}
+  }
+ }
+ const pulls=analyzePulls(data);
+ for(let num=2;num<=12;num++){const p=pulls[num];if(p.n>=10){const pred=p.PLAYER>=p.BANKER?'PLAYER':'BANKER';const hit=(pred==='PLAYER'?p.PLAYER:p.BANKER)/p.n;const h0=hit*0.7;if(hit>=0.6)cands.push({label:''+num+' puxa',n:p.n,pred:pred,hit:hit,h0:h0,gale:(h0*3+hit)/4});}}
+ cands.forEach(x=>x.adj=(x.gale||x.hit)-1.8/Math.sqrt(x.n));cands.sort((a,b)=>b.adj-a.adj);
+ return {best:cands[0]||null,cands:cands.slice(0,8),pulls:pulls};
+}
+function avaliar(o){
+ let sc=0,pr=null,mo=[];
+ if(o.best){pr=o.best.pred;if(o.best.n>=18)sc+=2;else if(o.best.n>=12)sc+=1;
+  if(o.best.hit<0.68)return{boa:false,motivos:['Fraco '+Math.round(o.best.hit*100)+'%']};
+  if(o.best.h0<0.42)return{boa:false,motivos:['Pouco G0 '+Math.round(o.best.h0*100)+'%']};
+  if(o.best.h0>=0.62){sc+=3;mo.push('PREMIUM G0 '+Math.round(o.best.h0*100)+'%');}
+  else if(o.best.h0>=0.52){sc+=2;mo.push('G0 '+Math.round(o.best.h0*100)+'%');}
+ }
+ else return{boa:false};
+ return{boa:sc>=6,pred:pr,score:sc,motivos:mo,best:o.best,cands:o.cands};
+}
+function analyzeAI(data){
+ if(data.length<10)return{ready:false,msg:'Cole 10+ resultados • ex: 8-6'};
+ const pk=pickPattern(data);const ch=avaliar(pk);
+ let et=null;if(ch.boa)et={pred:ch.pred,motivos:ch.motivos};
+ const cnt=data.reduce((a,c)=>{a[c.winner]++;return a;},{PLAYER:0,BANKER:0,TIE:0});
+ const mins={};data.forEach(r=>{const mn=new Date(r.ts).getMinutes();const e=mins[mn]||(mins[mn]={PLAYER:0,BANKER:0,TIE:0,n:0});e[r.winner]++;e.n++;});
+ const hot={};for(let n=2;n<=12;n++)hot[n]=0;data.forEach(r=>{hot[r.player]++;hot[r.banker]++;});
+ return{ready:true,entry:et,chance:ch,best:pk.best,cands:pk.cands,pulls:pk.pulls,cnt:cnt,mins:mins,hot:hot};
+}
+function renderAll(data){
+ const ai=analyzeAI(data);
+ // dice
+ if(data.length){
+  const r=data[0];
+  document.getElementById('dP1').textContent=r.diceP1;document.getElementById('dP2').textContent=r.diceP2;
+  document.getElementById('dB1').textContent=r.diceB1;document.getElementById('dB2').textContent=r.diceB2;
+  document.getElementById('vs').textContent=r.player+' - '+r.banker;
+  const wEl=document.getElementById('winner');wEl.textContent=r.winner;wEl.style.color=r.winner==='PLAYER'?BLUE:r.winner==='BANKER'?RED:GOLD;
+  document.getElementById('winDetail').textContent=r.player+'-'+r.banker+' • '+r.time;
+  document.getElementById('total').textContent=data.length;document.getElementById('totalSub').textContent='Último: '+r.player+'-'+r.banker;
+  document.getElementById('total2').textContent=data.length;
+ }
+ const cnt=data.reduce((a,c)=>{a[c.winner]++;return a;},{PLAYER:0,BANKER:0,TIE:0});
+ document.getElementById('pC').textContent=cnt.PLAYER;document.getElementById('pP').textContent=pct(cnt.PLAYER,data.length)+'%';
+ document.getElementById('bC').textContent=cnt.BANKER;document.getElementById('bP').textContent=pct(cnt.BANKER,data.length)+'%';
+ document.getElementById('tC').textContent=cnt.TIE;document.getElementById('tP').textContent=pct(cnt.TIE,data.length)+'%';
+ // matrix
+ const matEl=document.getElementById('matrix');
+ if(matEl){
+  if(!data.length){matEl.innerHTML='<div style="grid-column:1/-1;color:#666;font-size:11px;padding:12px;text-align:center">Cole resultados</div>';}
+  else{
+   const pulls=analyzePulls(data);matEl.innerHTML='';
+   for(let n=2;n<=12;n++){
+    const inf=pulls[n];const pred=inf.PLAYER>=inf.BANKER?'PLAYER':'BANKER';const predPct=inf.n?Math.round((pred==='PLAYER'?inf.PLAYER:inf.BANKER)/inf.n*100):0;
+    const div=document.createElement('div');div.className='cell'+(inf.n>=8&&predPct>=60?' active':'');
+    div.innerHTML='<div class="n">'+n+'</div><div class="p '+pred.toLowerCase()+'">'+pred+' '+predPct+'%</div><div style="font-size:9px;color:#666;margin-top:4px">'+inf.n+'x</div>';
+    div.onclick=()=>{const det=document.getElementById('matrixDetail');det.style.display='block';det.innerHTML='<b>Número '+n+' puxou '+inf.n+'x:</b><br><span style="color:'+BLUE+'">PLAYER '+inf.PLAYER+'x ('+(inf.n?Math.round(inf.PLAYER/inf.n*100):0)+'%)</span> • <span style="color:'+RED+'">BANKER '+inf.BANKER+'x</span> • TIE '+inf.TIE+'x<br><span style="font-size:11px;color:#666">Ex: 8 vermelho puxa o quê? Quando veio '+n+', próxima foi '+pred+' em '+predPct+'%</span>';};
+    matEl.appendChild(div);
+   }
+  }
+ }
+ // beads
+ const beadEl=document.getElementById('beadGrid');
+ if(beadEl){beadEl.innerHTML=data.slice(0,72).map((r,k)=>{const cl=r.winner==='PLAYER'?'player':r.winner==='BANKER'?'banker':'tie';return '<div class="bead '+cl+'">'+r.player+'-'+r.banker+'<small>'+r.winner[0]+'</small></div>';}).join('')||'<div style="color:#666;font-size:11px;padding:10px">Sem dados</div>';}
+ // ai
+ const aiBox=document.getElementById('aiBox');
+ if(!ai.ready){aiBox.innerHTML='<div style="padding:18px;text-align:center;background:var(--card2);border:1px dashed var(--line);border-radius:16px"><div style="font-weight:800">'+ai.msg+'</div></div>';}
+ else if(activeSignal){
+  const col=activeSignal.entry==='PLAYER'?BLUE:RED;
+  aiBox.innerHTML='<div class="sig '+activeSignal.entry.toLowerCase()+'"><div style="display:flex;justify-content:space-between"><span style="font-size:10px;letter-spacing:1px;color:#666">ENTRADA G'+activeSignal.gales+'</span><span style="font-size:10px;background:'+col+'20;color:'+col+';padding:4px 8px;border-radius:99px">G'+activeSignal.gales+'</span></div><div class="sig-entry" style="color:'+col+'">'+activeSignal.entry+'</div><div style="font-size:11px;color:#666">Aguardando resultado • '+activeSignal.time+'</div></div>';
+ } else if(ai.entry){
+  const col=ai.entry.pred==='PLAYER'?BLUE:RED;
+  aiBox.innerHTML='<div class="sig '+ai.entry.pred.toLowerCase()+'"><div style="font-size:10px;letter-spacing:1px;color:'+col+'">CHANCE BOA • 60%+ • '+ai.best.n+'x '+Math.round(ai.best.hit*100)+'%</div><div class="sig-entry" style="color:'+col+'">'+ai.entry.pred+'</div><div style="font-size:11px;color:#aaa">'+ai.entry.motivos.join(' • ')+'</div><button class="btn '+ai.entry.pred.toLowerCase()+'" style="margin-top:10px" onclick="confirmar(\''+ai.entry.pred+'\')">ENTRAR '+ai.entry.pred+' • G0</button></div>';
+ } else {
+  aiBox.innerHTML='<div style="padding:16px;background:var(--card2);border:1px solid var(--line);border-radius:16px;text-align:center"><div style="font-size:10px;letter-spacing:1px;color:#666">OBSERVANDO</div><div style="font-size:11px;color:#666;margin-top:4px">Sem chance boa 60%+ agora</div><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center">'+(ai.cands||[]).slice(0,3).map(c=>'<span style="font-size:10px;padding:4px 8px;border-radius:99px;background:rgba(255,255,255,.05);border:1px solid var(--line)">'+c.label+' → '+c.pred+' '+Math.round(c.hit*100)+'%</span>').join('')+'</div></div>';
+ }
+ // sig list
+ const sigList=document.getElementById('sigList'), sigStats=document.getElementById('sigStats');
+ if(sigStats){const ds=iaStats;sigStats.textContent=ds.greens+'W '+ds.reds+'L '+(ds.greens+ds.reds>0?Math.round(ds.greens/(ds.greens+ds.reds)*100):0)+'% | G0:'+ds.g0+' G1:'+ds.g1+' G2:'+ds.g2;}
+ if(sigList){let html='';if(activeSignal){const col=activeSignal.entry==='PLAYER'?BLUE:RED;html+='<div style="display:flex;justify-content:space-between;padding:8px 10px;background:var(--card2);border:1px solid '+col+'30;border-left:3px solid '+col+';border-radius:10px;margin-bottom:6px"><b style="color:'+col+'">ENTRA '+activeSignal.entry+'</b><span style="font-size:11px">G'+activeSignal.gales+'</span></div>';} html+=sigHistory.slice(0,6).map(s=>{const wn=s.status==='GREEN',col=s.entry==='PLAYER'?BLUE:RED,bc=wn?GREEN:RED;return '<div style="display:flex;justify-content:space-between;padding:6px 10px;background:var(--card2);border:1px solid var(--line);border-left:3px solid '+bc+';border-radius:10px;margin-bottom:6px"><span><b style="color:'+col+'">'+s.entry+'</b> <span style="font-size:10px;color:#666">'+(s.time||'')+' → '+(s.result||'')+'</span></span><span style="font-size:10px;font-weight:800;color:'+bc+'">'+(wn?'✓ G'+s.galesUsed:'✕')+'</span></div>';}).join(''); sigList.innerHTML=html||'<div style="color:#666;font-size:11px;text-align:center;padding:8px">Nenhum sinal</div>';}
+ // extras
+ const hotBox=document.getElementById('hotBox');if(hotBox){const hot=ai.hot||{};const sorted=Object.entries(hot).sort((a,b)=>b[1]-a[1]).slice(0,5);hotBox.innerHTML=sorted.map(([n,q])=>'<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line);font-size:11px"><span>'+n+'</span><span><b>'+q+'x</b></span></div>').join('')||'<div style="color:#666;font-size:11px">—</div>';}
+ const minBox=document.getElementById('minBox');if(minBox){const mins=ai.mins||{};const sorted=Object.entries(mins).filter(x=>x[1].n>=3).sort((a,b)=>b[1].n-a[1].n).slice(0,5);minBox.innerHTML=sorted.map(([m,inf])=>{const pred=inf.PLAYER>=inf.BANKER?'PLAYER':'BANKER';const col=pred==='PLAYER'?BLUE:RED;return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line);font-size:11px"><span style="color:#666">:'+String(m).padStart(2,'0')+'</span><span><b style="color:'+col+'">'+pred+'</b> '+Math.round((pred==='PLAYER'?inf.PLAYER:inf.BANKER)/inf.n*100)+'% ('+inf.n+'x)</span></div>';}).join('')||'<div style="color:#666;font-size:11px">—</div>';}
+ const patBox=document.getElementById('patBox');if(patBox){patBox.innerHTML=ai.cands&&ai.cands.length?ai.cands.map(c=>'<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line);font-size:11px"><span>'+c.label+' → <b style="color:'+(c.pred==='PLAYER'?BLUE:RED)+'">'+c.pred+'</b></span><span><b>'+Math.round(c.hit*100)+'%</b> <span style="color:#666">'+c.n+'x</span></span></div>').join(''):'<div style="color:#666;font-size:11px">—</div>';}
+ const tbody=document.getElementById('tbody');if(tbody){tbody.innerHTML=data.slice(0,100).map((r,i)=>{const col=r.winner==='PLAYER'?BLUE:r.winner==='BANKER'?RED:GOLD;return '<tr><td>#'+(data.length-i)+'</td><td><b>'+r.player+'-'+r.banker+'</b></td><td><span style="background:var(--blue);padding:2px 6px;border-radius:6px;font-size:10px">'+r.diceP1+'</span> <span style="background:var(--blue);padding:2px 6px;border-radius:6px;font-size:10px">'+r.diceP2+'</span> <span style="background:var(--red);padding:2px 6px;border-radius:6px;font-size:10px">'+r.diceB1+'</span> <span style="background:var(--red);padding:2px 6px;border-radius:6px;font-size:10px">'+r.diceB2+'</span></td><td style="color:'+col+';font-weight:800">'+r.winner+'</td><td style="color:#666">'+(r.time||'')+'</td></tr>';}).join('')||'<tr><td colspan=5 style="text-align:center;color:#666;padding:12px">Sem dados</td></tr>';}
+ // charts simple
+ const c1=document.getElementById('cDist');
+ if(c1){
+  if(chartDist) chartDist.destroy();
+  const cnt={PLAYER:0,BANKER:0,TIE:0};
+  data.forEach(r=>{ if(cnt[r.winner]!==undefined) cnt[r.winner]++; });
+  chartDist=new Chart(c1,{type:'doughnut',data:{labels:['PLAYER','BANKER','TIE'],datasets:[{data:[cnt.PLAYER,cnt.BANKER,cnt.TIE],backgroundColor:[BLUE,RED,GOLD],borderWidth:0}]},options:{plugins:{legend:{labels:{color:'#666',font:{size:10}}}}}});
+ }
+ const c2=document.getElementById('cHist');
+ if(c2 && data.length){
+  if(chartHist) chartHist.destroy();
+  const L=data.slice(0,50).reverse();
+  const cc=L.map(r=> r.winner==='PLAYER'?BLUE : r.winner==='BANKER'?RED : GOLD);
+  const vals=L.map(r=> r.winner==='PLAYER'?3 : r.winner==='BANKER'?2 : 1);
+  const labs=L.map((_,i)=> i+1);
+  chartHist=new Chart(c2,{type:'bar',data:{labels:labs,datasets:[{data:vals,backgroundColor:cc,borderRadius:4}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#555',font:{size:8}},grid:{display:false}},y:{grid:{color:'rgba(255,255,255,.05)'}}}}});
+ }
+}
+
+function confirmar(pred){activeSignal={id:Date.now(),entry:pred,time:new Date().toLocaleTimeString('pt-BR'),afterRoundId:bacboData[0]?.round_id||'0',gales:0};persist();renderAll(bacboData);}
+
+// CLOUD STREAM - EventSource igual Football - nao polling 5s
+async function connectCloud(){
+ const base=API_BASE;
+ const statusEl=document.getElementById('apiStatus');
+ try{
+  // tenta SSE
+  eventSource=new EventSource(base+'/api/stream');
+  statusEl.innerHTML='<span class="live"></span> CLOUD • '+base.replace('https://','').split('.')[0]+' • LIVE';
+  eventSource.onmessage=(e)=>{
+   try{
+    const msg=JSON.parse(e.data);
+    if(msg.type==='init'){
+     bacboData=msg.history||msg.data||bacboData;
+     if(bacboData.length){persist();renderAll(bacboData);}
+    } else if(msg.type==='new_round'){
+     const entry=msg.data;
+     // evita duplicado
+     if(!bacboData.find(x=>x.round_id===entry.round_id)){
+      bacboData.unshift(entry);
+      bacboData=bacboData.slice(0,400);
+      persist();
+      renderAll(bacboData);
+      // anima dice
+      document.querySelectorAll('.d').forEach(el=>{el.style.transform='scale(1.1)';setTimeout(()=>el.style.transform='scale(1)',200);});
+     }
+    }
+   }catch(err){console.log('SSE parse err',err);}
+  };
+  eventSource.onerror=()=>{
+   console.log('SSE erro, fallback polling');
+   statusEl.textContent='CLOUD erro • tentando reconectar...';
+   eventSource.close();
+   setTimeout(()=>{connectCloud();},3000);
+  };
+ }catch(e){
+  statusEl.textContent='API offline • local '+bacboData.length;
+  // fallback polling se SSE falhar
+  setInterval(async()=>{
+   try{
+    const res=await fetch(base+'/api/rounds').then(r=>r.json());
+    if(res.data&&res.data.length>bacboData.length){
+     bacboData=res.data;persist();renderAll(bacboData);
+    }
+   }catch(err){}
+  },10000);
+ }
+}
+
+// LOGIN
+function doLogin(){const u=document.getElementById('lu').value.trim(),p=document.getElementById('lp').value.trim(),e=document.getElementById('le');if((u==='santarosavander@gmail.com'&&p==='131619jV*')||(u==='admin'&&p==='admin')){document.getElementById('login').style.display='none';localStorage.setItem('bacbo_nexus_login','1');connectCloud();renderAll(bacboData);}else{e.textContent='Login inválido';e.style.display='block';}}
+(function(){if(localStorage.getItem('bacbo_nexus_login')){document.getElementById('login').style.display='none';connectCloud();renderAll(bacboData);}})();
+
+// inicial
+renderAll(bacboData);
+</script>
+</body>
+</html>
